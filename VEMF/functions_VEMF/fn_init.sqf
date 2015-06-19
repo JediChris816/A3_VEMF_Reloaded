@@ -13,7 +13,7 @@
 // Add Damage Fix until Epoch Fixes it
 //[] ExecVM "\VEMF\functions_VEMF\fn_allowDmg.sqf";
 
-_version = "0.34r REBOOT";
+_version = "0.0340r REBOOT";
 diag_log format["[VEMF] %1 booting... loading config...", _version];
 _settings = compileFinal preprocessFileLineNumbers "\VEMF\configuration.sqf";
 call _settings; // Make sure it is loaded before continuing.
