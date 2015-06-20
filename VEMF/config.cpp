@@ -21,7 +21,6 @@ class cfgFunctions
 			class addonLoader { postInit = 1; };
 			class aiKilled { };
 			class aiWatchdog { postInit = 1; };
-			class allowDmg { };
 			class broadCast { };
 			class findHouses { };
 			class findTown { };

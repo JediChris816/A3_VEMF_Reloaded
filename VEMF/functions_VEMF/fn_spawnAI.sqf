@@ -24,6 +24,7 @@
 			The amount of groups you want.
 			If you supply a group count, and 1 is True, you will get one group spawned at each position.
 */
+
 private ["_posArr","_SorR","_skill","_arrName","_grpCount","_sldrClass","_unitsPerGrp","_owner","_grp","_newPos",
 "_grpArr","_unit","_pos","_waypoints","_wp","_cyc","_unitArr"];
 
@@ -34,9 +35,13 @@ _skill    = _this select 3;
 _arrName  = _this select 4;
 _grpCount = _this select 5;
 
-if (isNil "_grpCount") then {_grpCount = 0;};
+if (isNil "_grpCount") then
+{
+	_grpCount = 0;
+};
 
-if (VEMFDebugAI) then {
+if (VEMFDebugAI) then
+{
 	diag_log format["[VEMF]: AI Spawn Vars: %1 / %2 / %3 / %4 / %5", str _posArr, _SorR, _skill, _arrName, _grpCount];
 };
 
@@ -49,11 +54,13 @@ if (_SorR) then
 {
 	// Strict Distribution
 
-	if (count _posArr > 1) then {
+	if (count _posArr > 1) then
+	{
 		// We have multiple positions. Spawn a group at each one.
 
 		// Check for Nested Array
-		if (typeName (_posArr select 0) == "SCALAR") exitWith {
+		if (typeName (_posArr select 0) == "SCALAR") exitWith
+		{
 			diag_log "[VEMF] Warning: AI Spawn: Strict Distribution Not a Nested Array!";
 		};
 
@@ -71,7 +78,8 @@ if (_SorR) then
 				// Find Nearby Position (Radius 50m)
 				_newPos = [_x,0,50,60,0,20,0] call BIS_fnc_findSafePos;
 
-				if (count (units _grp) == _unitsPerGrp) then {
+				if (count (units _grp) == _unitsPerGrp) then
+				{
 					// Fireteam is Full, Create a New Group
 					_grpArr = _grpArr + [_grp];
 					_grp = grpNull;
@@ -105,7 +113,8 @@ if (_SorR) then
 				_unit setVariable ["LASTLOGOUT_EPOCH", (diag_tickTime + 14400)];
 
 				// Leader Assignment
-				if (count (units _grp) == _unitsPerGrp) then {
+				if (count (units _grp) == _unitsPerGrp) then
+				{
 					_unit setSkill ["general", VEMF_aiSkill];
 					_grp selectLeader _unit;
 				};
@@ -115,41 +124,99 @@ if (_SorR) then
 			};
 		} forEach _posArr;
 
-		if (VEMFDebugAI) then {
+		if (VEMFDebugAI) then
+		{
 			diag_log format["[VEMF] AI Debug: Spawned %1 Units at Grid %2", (_grpCount*_unitsPerGrp), (mapGridPosition _pos)];
 		};
 
-	} else {
+	} else
+		{
+			// We have a single POS given.
+			// Find the Owner
+			//_owner = owner ((_pos nearEntities [["Epoch_Male_F", "Epoch_Female_F"], 800]) select 0);
+			// Create the Group
+			_grp = createGroup RESISTANCE;
+			_grp setBehaviour "AWARE";
+			_grp setCombatMode "YELLOW";
 
-		// We have a single POS given.
+			// Spawn Groups near Position
+			for "_i" from 1 to (_grpCount*_unitsPerGrp) do
+			{
+				// Find Nearby Position (Radius 50m)
+				_newPos = [_pos,0,50,60,0,20,0] call BIS_fnc_findSafePos;
+
+				if (count (units _grp) == _unitsPerGrp) then
+				{
+					// Fireteam is Full, Create a New Group
+					_grpArr = _grpArr + [_grp];
+					_grp = grpNull;
+					_grp = createGroup RESISTANCE;
+					_grp setBehaviour "AWARE";
+					_grp setCombatMode "RED";
+				};
+
+				// Create Unit There
+				_unit = _grp createUnit [_sldrClass, _newPos, [], 0, "FORM"];
+
+				// Load the AI
+				[_unit] call VEMF_fnc_loadInv;
+
+				// Enable its AI
+				_unit setSkill ["general", VEMF_aiSkill];
+				_unit setRank "Private";
+				_unit enableAI "TARGET";
+				_unit enableAI "AUTOTARGET";
+				_unit enableAI "MOVE";
+				_unit enableAI "ANIM";
+
+				// Might write a custom FSM in the future
+				// Default Arma 3 Soldier FSM for now
+				_unit enableAI "FSM";
+
+				// Prepare for Cleanup or Caching
+				//_unit addEventHandler ["Local",{ [(_this select 0), (_this select 1)] ExecVM VEMF_fnc_localEH; }];
+				_unit addEventHandler ["Killed",{ [(_this select 0), (_this select 1)] spawn VEMF_fnc_aiKilled; }];
+				_unit setVariable ["VEMFUArray", _arrName];
+				_unit setVariable ["VEMFAI", true];
+				_unit setVariable ["LASTLOGOUT_EPOCH", (diag_tickTime + 14400)];
+
+				// Leader Assignment
+				if (count (units _grp) == _unitsPerGrp) then
+				{
+					_unit setSkill ["general", VEMF_aiSkill];
+					_grp selectLeader _unit;
+				};
+
+				// Set Owner to Prevent Server Local Cleanup
+				//_unit setOwner _owner;
+			};
+
+			if (VEMFDebugAI) then
+			{
+				diag_log format ["[VEMF]: AI Debug: Spawned %1 Units at Grid %2", (_grpCount*_unitsPerGrp), (mapGridPosition _pos)];
+			};
+		};
+
+} else
+	{
+		// Rough Distribution
+		if (typeName (_posArr select 0) == "SCALAR") exitWith
+		{
+			diag_log format ["[VEMF]: Warning: AI Spawn: Rough Distribution Requires Multiple Positions!"];
+		};
 
 		// Find the Owner
 		//_owner = owner ((_pos nearEntities [["Epoch_Male_F", "Epoch_Female_F"], 800]) select 0);
-
 		// Create the Group
 		_grp = createGroup RESISTANCE;
 		_grp setBehaviour "AWARE";
 		_grp setCombatMode "YELLOW";
 
-		// Spawn Groups near Position
-		for "_i" from 1 to (_grpCount*_unitsPerGrp) do
 		{
-			// Find Nearby Position (Radius 50m)
-			_newPos = [_pos,0,50,60,0,20,0] call BIS_fnc_findSafePos;
+			// Create Unit
+			_unit = _grp createUnit [_sldrClass, _x, [], 0, "FORM"];
 
-			if (count (units _grp) == _unitsPerGrp) then {
-				// Fireteam is Full, Create a New Group
-				_grpArr = _grpArr + [_grp];
-				_grp = grpNull;
-				_grp = createGroup RESISTANCE;
-				_grp setBehaviour "AWARE";
-				_grp setCombatMode "RED";
-			};
-
-			// Create Unit There
-			_unit = _grp createUnit [_sldrClass, _newPos, [], 0, "FORM"];
-
-			// Load the AI
+			// Load the AI's inventory
 			[_unit] call VEMF_fnc_loadInv;
 
 			// Enable its AI
@@ -159,6 +226,7 @@ if (_SorR) then
 			_unit enableAI "AUTOTARGET";
 			_unit enableAI "MOVE";
 			_unit enableAI "ANIM";
+
 			// Might write a custom FSM in the future
 			// Default Arma 3 Soldier FSM for now
 			_unit enableAI "FSM";
@@ -170,94 +238,44 @@ if (_SorR) then
 			_unit setVariable ["VEMFAI", true];
 			_unit setVariable ["LASTLOGOUT_EPOCH", (diag_tickTime + 14400)];
 
-			// Leader Assignment
-			if (count (units _grp) == _unitsPerGrp) then {
+			// Separate Groups via Location Distance
+			// Logic is that group positions come in via houses
+			// Therefore separate them to one group per house
+			if (_forEachIndex != 0) then
+			{
+				if ((_x distance (_posArr select (_forEachIndex-1))) > 40) then
+				{
+					// Too Far, Need New Group
+					_unit setSkill ["general", VEMF_aiSkill];
+					_grp selectLeader _unit;
+					_grpArr = _grpArr + [_grp];
+					_grp = grpNull;
+					_grp = createGroup RESISTANCE;
+					_grp setBehaviour "AWARE";
+					_grp setCombatMode "RED";
+				};
+			};
+
+			if (_forEachIndex == ((count(_posArr))-1)) then
+			{
 				_unit setSkill ["general", VEMF_aiSkill];
 				_grp selectLeader _unit;
+
+				if (!(_grp in _grpArr)) then
+				{
+					_grpArr = _grpArr + [_grp];
+				};
 			};
 
 			// Set Owner to Prevent Server Local Cleanup
-			//_unit setOwner _owner;
-		};
+			//_unit setOwner (owner _owner);
+		} forEach _posArr;
 
-		if (VEMFDebugAI) then {
-			diag_log format ["[VEMF]: AI Debug: Spawned %1 Units at Grid %2", (_grpCount*_unitsPerGrp), (mapGridPosition _pos)];
+		if (VEMFDebugAI) then
+		{
+			diag_log format ["[VEMF]: AI Debug: Spawned %1 Units near Grid %2", (count _posArr), (mapGridPosition _pos)];
 		};
 	};
-
-} else {
-
-	// Rough Distribution
-
-	if (typeName (_posArr select 0) == "SCALAR") exitWith {
-		diag_log format ["[VEMF]: Warning: AI Spawn: Rough Distribution Requires Multiple Positions!"];
-	};
-
-	// Find the Owner
-	//_owner = owner ((_pos nearEntities [["Epoch_Male_F", "Epoch_Female_F"], 800]) select 0);
-
-	// Create the Group
-	_grp = createGroup RESISTANCE;
-	_grp setBehaviour "AWARE";
-	_grp setCombatMode "YELLOW";
-
-	{
-		// Create Unit
-		_unit = _grp createUnit [_sldrClass, _x, [], 0, "FORM"];
-
-		// Load the AI
-		[_unit] call VEMF_fnc_loadInv;
-
-		// Enable its AI
-		_unit setSkill ["general", VEMF_aiSkill];
-		_unit setRank "Private";
-		_unit enableAI "TARGET";
-		_unit enableAI "AUTOTARGET";
-		_unit enableAI "MOVE";
-		_unit enableAI "ANIM";
-		// Might write a custom FSM in the future
-		// Default Arma 3 Soldier FSM for now
-		_unit enableAI "FSM";
-
-		// Prepare for Cleanup or Caching
-		//_unit addEventHandler ["Local",{ [(_this select 0), (_this select 1)] ExecVM VEMF_fnc_localEH; }];
-		_unit addEventHandler ["Killed",{ [(_this select 0), (_this select 1)] spawn VEMF_fnc_aiKilled; }];
-		_unit setVariable ["VEMFUArray", _arrName];
-		_unit setVariable ["VEMFAI", true];
-		_unit setVariable ["LASTLOGOUT_EPOCH", (diag_tickTime + 14400)];
-
-		// Separate Groups via Location Distance
-		// Logic is that group positions come in via houses
-		// Therefore separate them to one group per house
-		if (_forEachIndex != 0) then {
-			if ((_x distance (_posArr select (_forEachIndex-1))) > 40) then {
-				// Too Far, Need New Group
-				_unit setSkill ["general", VEMF_aiSkill];
-				_grp selectLeader _unit;
-				_grpArr = _grpArr + [_grp];
-				_grp = grpNull;
-				_grp = createGroup RESISTANCE;
-				_grp setBehaviour "AWARE";
-				_grp setCombatMode "RED";
-			};
-		};
-
-		if (_forEachIndex == ((count(_posArr))-1)) then {
-			_unit setSkill ["general", VEMF_aiSkill];
-			_grp selectLeader _unit;
-			if (!(_grp in _grpArr)) then {
-				_grpArr = _grpArr + [_grp];
-			};
-		};
-
-		// Set Owner to Prevent Server Local Cleanup
-		//_unit setOwner (owner _owner);
-	} forEach _posArr;
-
-	if (VEMFDebugAI) then {
-		diag_log format ["[VEMF]: AI Debug: Spawned %1 Units near Grid %2", (count _posArr), (mapGridPosition _pos)];
-	};
-};
 
 if (count _grpArr < 1) exitWith {};
 
@@ -271,7 +289,8 @@ _waypoints = [
 
 // Make them Patrol
 {
-	for "_z" from 0 to ((count _waypoints)-1) do {
+	for "_z" from 0 to ((count _waypoints)-1) do
+	{
 		_wp = _x addWaypoint [(_waypoints select _z), 10];
 		_wp setWaypointType "SAD";
 		_wp setWaypointCompletionRadius 20;

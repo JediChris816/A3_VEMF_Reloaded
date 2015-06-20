@@ -1,29 +1,29 @@
 /*
-	VEMF Addon Loader by Vampire
-	Runs addon scripts.
+	Author: Vampire
 
-	If you're fancy enough you can include folder names Dev's.
-	You have to keep your addons looping if required, this script doesn't keep them running.
-
-	Examples:
-		Caves.sqf
-		\VEMF\Addons\Caves\init.sqf
+	Description:
+	runs addon scripts
 */
+
 [] spawn
 {
-	
 	VEMFLock = false;
-	if (isNil "VEMFLock") then {VEMFLock = true;};
-	if (VEMFLock || isNil "VEMFAddon") exitWith {};
+	if (isNil "VEMFLock") then
 	{
-		if (_x != "") then 
+		VEMFLock = true;
+	};
+
+	if not(VEMFLock or isNil"VEMFAddon") then
+	{
 		{
+			if (_x != "") then
+			{
 			// Let's run the addon
 			call compile preprocessFileLineNumbers format ["\VEMF\Addons\%1", _x];
-		};
-	} forEach VEMFAddon;
-	
-	VEMFLock = true;
-	VEMFAddon = nil;
+			};
+		} forEach VEMFAddon;
+		VEMFLock = true;
+		VEMFAddon = nil;
+	};
 };
 diag_log "[VEMF] addonLoader booted!";

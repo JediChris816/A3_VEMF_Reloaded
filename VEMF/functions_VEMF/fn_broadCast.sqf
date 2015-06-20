@@ -3,6 +3,9 @@
 
 	Description:
 	will alert players
+
+	Returns:
+	BOOLEAN - true if sent
 */
 
 _msg = _this select 0;
