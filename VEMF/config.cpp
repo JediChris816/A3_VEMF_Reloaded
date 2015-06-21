@@ -17,7 +17,7 @@ class cfgFunctions
 		class fn
 		{
 			file = "\VEMF\functions_VEMF";
-			class init { postInit = 1; };
+			class initVEMF { postInit = 1; };
 			class addonLoader { postInit = 1; };
 			class aiKilled { };
 			class aiWatchdog { postInit = 1; };

@@ -133,10 +133,13 @@ _box = _boxes call BIS_fnc_selectRandom;
 _crate = createVehicle [_box,(_canTown select 1),[],0,"CAN_COLLIDE"];
 _crate setVariable ["VEMFScenery", true];
 _cratePos = (_canTown select 1) findEmptyPosition [0,400,(typeOf _crate)];
-if ((count _cratePos) > 0) then
+if (count _cratePos isEqualTo 0) exitWith
 {
-	_crate setPos _cratePos;
+	diag_log format["[VEMF] ERROR NO EMPTY POS FOUND! at %1", _canTown select 1];
 };
+
+// Successfully found empty pos, let's place the crate.
+_crate setPos _cratePos;
 
 [_crate] call VEMF_fnc_loadLoot;
 diag_log format ["[VEMF]: DynTownInv: Crate Spawned At: %1 / Grid: %2", (getPosATL _crate), mapGridPosition (getPosATL _crate)];

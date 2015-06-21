@@ -16,7 +16,7 @@
 		// Wait a Random Amount
 		uiSleep ((floor(random(_timeDiff))) + (VEMFMinMissTime*60));
 		// Pick A Mission
-		if not(count VEMFMissionArray isEqualTo 0) exitWith
+		if not((count VEMFMissionArray) isEqualTo 0) then
 		{
 			_missVar = VEMFMissionArray call BIS_fnc_selectRandom;
 			// Run It
@@ -24,5 +24,7 @@
 			diag_log format["[VEMF] missionTimer started %1", _missVar];
 		};
 	};
-	diag_log "[VEMF] missionTimer booted!";
+
 };
+
+diag_log "[VEMF] missionTimer booted!";
